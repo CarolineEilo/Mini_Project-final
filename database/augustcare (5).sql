@@ -124,16 +124,18 @@ INSERT INTO `nannytbl` (`ID`, `Fullname`, `Username`, `Email`, `PhoneNumber`, `P
 --
 -- Table structure for table `notifications`
 --
-CREATE TABLE notifications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    parent_id INT NOT NULL,
-    nanny_id INT NOT NULL,
-    parent_name VARCHAR(255),
-    nanny_email VARCHAR(255),
-    message TEXT,
-    status ENUM('unread', 'read') DEFAULT 'unread',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-); ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL,
+  `parent_id` int(11) DEFAULT NULL,
+  `nanny_id` int(11) DEFAULT NULL,
+  `parent_name` varchar(255) DEFAULT NULL,
+  `nanny_email` varchar(255) DEFAULT NULL,
+  `status` enum('pending','accepted','rejected') DEFAULT 'pending',
+  `message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `is_read` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -166,8 +168,6 @@ INSERT INTO `parentstbl` (`ID`, `Fullname`, `Username`, `Email`, `PhoneNumber`, 
 (8, 'Nali', 'nali', 'nali@gmail.com', 816430811, '$2y$10$.DP5YWVLQySt7C76vdWRre0', '2024-11-25 05:52:30');
 
 -- --------------------------------------------------------
-INSERT INTO notifications (parent_id, nanny_id, parent_name, nanny_email, message, status)
-VALUES (1, 6, 'Grace', 'nanny@example.com', 'You have a new request!', 'unread');
 
 --
 -- Table structure for table `searchnanny`
@@ -187,7 +187,6 @@ CREATE TABLE `searchnanny` (
 --
 -- Dumping data for table `searchnanny`
 --
-SELECT * FROM notifications WHERE nanny_id = 6 AND status = 'unread';
 
 INSERT INTO `searchnanny` (`id`, `location`, `numberOfchildren`, `datetime`, `ageCategory`, `language`, `domesticWork`, `price`) VALUES
 (1, 'Otjomuise', 2, '2024-11-23 12:29:00', 'Baby', 'Oshiwambo', 'Ironing', 555.00),
@@ -197,9 +196,6 @@ INSERT INTO `searchnanny` (`id`, `location`, `numberOfchildren`, `datetime`, `ag
 --
 -- Indexes for dumped tables
 --
-UPDATE notifications
-SET status = 'read'
-WHERE id = 1;
 
 --
 -- Indexes for table `admin`
@@ -293,3 +289,19 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- Add parent_id column to searchnanny table if it doesn't exist
+ALTER TABLE `searchnanny`
+ADD COLUMN `parent_id` int(11) DEFAULT NULL AFTER `id`,
+ADD FOREIGN KEY (`parent_id`) REFERENCES `parentstbl`(`ID`);
+
+-- Make sure notifications table has all required fields
+ALTER TABLE `notifications` 
+MODIFY COLUMN `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+MODIFY COLUMN `status` enum('pending','accepted','rejected') DEFAULT 'pending',
+MODIFY COLUMN `is_read` tinyint(1) DEFAULT 0;
+
+-- Add indexes for better performance
+CREATE INDEX idx_nanny_email ON notifications(nanny_email);
+CREATE INDEX idx_parent_id ON notifications(parent_id);
+CREATE INDEX idx_status ON notifications(status);
