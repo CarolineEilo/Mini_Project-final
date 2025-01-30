@@ -1,34 +1,32 @@
 <?php
 session_start();
-require_once 'connection.php'; // Include database connection
-
+require_once 'connection.php';
 
 if (isset($_POST['login'])) {
-    $username = isset($_POST['userN']) ? $_POST['userN'] : ''; // Assign an empty string if not set
+    $username = isset($_POST['userN']) ? $_POST['userN'] : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-    // Continue with your login logic
-
     // SQL query to fetch user data
-    $sql = "SELECT ID, Username, Password FROM nannytbl WHERE Username = :username";
+    $sql = "SELECT ID, Username, Email, Password FROM nannytbl WHERE Username = :username";
     $query = $dbh->prepare($sql);
     $query->bindParam(':username', $username, PDO::PARAM_STR);
     $query->execute();
     $result = $query->fetch(PDO::FETCH_OBJ);
 
     if ($result) {
-        echo "User found.<br>"; // Debug
         if (password_verify($password, $result->Password)) {
             $_SESSION['userid'] = $result->ID;
             $_SESSION['username'] = $result->Username;
+            $_SESSION['email'] = $result->Email; // Add this line to store email
+            header("Location: dashboard.php");
+            exit();
         } else {
-            echo "<script type='text/javascript'> document.location = 'dashboard.php'; </script>";
+            echo "<script>alert('Invalid password');</script>";
         }
     } else {
-        echo "<script>alert('Invalid username or password');</script>";
+        echo "<script>alert('Invalid username');</script>";
     }
 }
-
 ?>
 
 <!DOCTYPE html>

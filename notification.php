@@ -3,19 +3,20 @@
 require_once 'connection.php';
 
 // Ensure nanny is logged in
-//session_start();
-//if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'nanny') {
-//    header('Location: login.php');
-//   exit();
-//}
+session_start();
+if (!isset($_SESSION['email'])) {
+    header('Location: nannylogin.php');
+    exit();
+}
 
 // Handle request responses
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['notification_id'])) {
     $notification_id = $_POST['notification_id'];
     $status = $_POST['status'];
 
-    $stmt = $conn->prepare("UPDATE notifications SET status = ?, is_read = TRUE WHERE id = ?");
-    $stmt->bind_param("si", $status, $notification_id);
+    $stmt = $dbh->prepare("UPDATE notifications SET status = ?, is_read = TRUE WHERE id = ?");
+    $stmt->bindParam(1, $status);
+    $stmt->bindParam(2, $notification_id);
     $stmt->execute();
 }
 ?>
@@ -95,17 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['notification_id'])) {
 
     <?php
     // Fetch notifications for the logged-in nanny
-    $nanny_email = $_SESSION['email'];
-    $query = "SELECT * FROM notifications WHERE nanny_email = ? ORDER BY created_at DESC";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $nanny_email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+// Replace the existing database query section with this:
+$nanny_email = $_SESSION['email'];
+$query = "SELECT * FROM notifications WHERE nanny_email = ? ORDER BY created_at DESC";
+$stmt = $dbh->prepare($query);  // Change $conn to $dbh
+$stmt->bindParam(1, $nanny_email);
+$stmt->execute();
+$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $unreadClass = $row['is_read'] ? '' : 'unread';
-    ?>
+if ($notifications) {
+    foreach ($notifications as $row) {
+        $unreadClass = $row['is_read'] ? '' : 'unread';
+?>
             <div class="notification-card <?php echo $unreadClass; ?>">
                 <h4><?php echo htmlspecialchars($row['parent_name']); ?> sent you a request</h4>
                 <p><?php echo htmlspecialchars($row['message']); ?></p>
@@ -136,6 +138,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['notification_id'])) {
         echo '<p>No notifications yet.</p>';
     }
     ?>
+
+<?php
+if ($notifications) {
+    foreach ($notifications as $row) {
+        $unreadClass = $row['is_read'] ? '' : 'unread';
+?>
+
+<?php
+    }
+} else {
+    echo '<p>No notifications yet.</p>';
+}
+?>
 
     <script>
         // Mark notifications as read when viewed

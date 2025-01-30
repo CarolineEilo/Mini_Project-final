@@ -9,22 +9,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit'])) {
     $datetime = $_POST['datetime'];
     $ageCategory = $_POST['choice'];
     $language = $_POST['language'];
-    $domesticWork = isset($_POST['Domestic']) ? implode(', ', $_POST['Domestic']) : ''; // For multiple checkboxes
+    $domesticWork = isset($_POST['Domestic']) ? implode(', ', $_POST['Domestic']) : '';
     $price = $_POST['price'];
+    $parent_id = $_SESSION['userid']; // Make sure this is set during parent login
 
     try {
         // Prepare the SQL query
-        $stmt = $dbh->prepare("INSERT INTO searchnanny (location, numberOfchildren, datetime, ageCategory, language, domesticWork, price) 
-                               VALUES (:location, :numberOfchildren, :datetime, :ageCategory, :language, :domesticWork, :price)");
+        $stmt = $dbh->prepare("INSERT INTO searchnanny (parent_id, location, numberOfchildren, datetime, ageCategory, language, domesticWork, price) 
+                               VALUES (:parent_id, :location, :numberOfchildren, :datetime, :ageCategory, :language, :domesticWork, :price)");
 
         // Bind parameters
+        $stmt->bindParam(':parent_id', $parent_id, PDO::PARAM_INT);
         $stmt->bindParam(':location', $location, PDO::PARAM_STR);
         $stmt->bindParam(':numberOfchildren', $numberOfchildren, PDO::PARAM_INT);
         $stmt->bindParam(':datetime', $datetime, PDO::PARAM_STR);
         $stmt->bindParam(':ageCategory', $ageCategory, PDO::PARAM_STR);
         $stmt->bindParam(':language', $language, PDO::PARAM_STR);
         $stmt->bindParam(':domesticWork', $domesticWork, PDO::PARAM_STR);
-        $stmt->bindParam(':price', $price, PDO::PARAM_INT);
+        $stmt->bindParam(':price', $price, PDO::PARAM_STR);
+
+        $stmt->execute();
+        echo "<script>alert('Search submitted successfully!');</script>";
+    } catch(PDOException $e) {
+        echo "<script>alert('Error: " . $e->getMessage() . "');</script>";
+    }
+}
+?>
 
         // Execute the statement
         if ($stmt->execute()) {
